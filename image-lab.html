@@ -1,0 +1,1823 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Image Lab 出图工作台</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #071017;
+        --panel: rgba(14, 24, 35, 0.88);
+        --panel-strong: rgba(18, 31, 45, 0.96);
+        --line: rgba(148, 163, 184, 0.22);
+        --text: #e5edf7;
+        --muted: #93a4b8;
+        --brand: #7dd3fc;
+        --brand-2: #c084fc;
+        --good: #34d399;
+        --warn: #fbbf24;
+        --bad: #fb7185;
+        --shadow: 0 24px 80px rgba(0, 0, 0, 0.36);
+        --radius: 22px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
+
+      body {
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background:
+          radial-gradient(circle at 12% 8%, rgba(125, 211, 252, 0.18), transparent 28%),
+          radial-gradient(circle at 90% 12%, rgba(192, 132, 252, 0.16), transparent 28%),
+          linear-gradient(135deg, #05080d 0%, #071017 46%, #0d1520 100%);
+        color: var(--text);
+        overflow: hidden;
+      }
+
+      button,
+      input,
+      textarea,
+      select {
+        font: inherit;
+      }
+
+      button {
+        border: 0;
+        cursor: pointer;
+      }
+
+      .app {
+        height: 100%;
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+      }
+
+      .topbar {
+        padding: 16px 20px 12px;
+        border-bottom: 1px solid var(--line);
+        background: rgba(7, 16, 23, 0.72);
+        backdrop-filter: blur(18px);
+        display: grid;
+        grid-template-columns: minmax(220px, 1fr) auto;
+        gap: 18px;
+        align-items: center;
+      }
+
+      .brand {
+        min-width: 0;
+      }
+
+      .brand h1 {
+        margin: 0;
+        font-size: 20px;
+        letter-spacing: 0.01em;
+      }
+
+      .brand p {
+        margin: 5px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .status-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: flex-end;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 8px 10px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        color: var(--muted);
+        background: rgba(15, 23, 42, 0.72);
+        font-size: 12px;
+        white-space: nowrap;
+      }
+
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--muted);
+        box-shadow: 0 0 18px currentColor;
+      }
+
+      .dot.good { background: var(--good); color: var(--good); }
+      .dot.warn { background: var(--warn); color: var(--warn); }
+      .dot.bad { background: var(--bad); color: var(--bad); }
+
+      .main {
+        min-height: 0;
+        display: grid;
+        grid-template-columns: 360px minmax(0, 1fr);
+        gap: 14px;
+        padding: 14px 20px;
+      }
+
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        min-height: 0;
+      }
+
+      .sidebar {
+        overflow: hidden;
+        display: grid;
+        grid-template-rows: auto 1fr;
+      }
+
+      .panel-head {
+        padding: 16px 16px 12px;
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .panel-title {
+        display: grid;
+        gap: 3px;
+      }
+
+      .panel-title strong {
+        font-size: 14px;
+      }
+
+      .panel-title span {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .history {
+        overflow: auto;
+        padding: 10px;
+      }
+
+      .history-item {
+        width: 100%;
+        text-align: left;
+        color: var(--text);
+        border: 1px solid transparent;
+        border-radius: 16px;
+        padding: 10px;
+        background: transparent;
+        display: grid;
+        grid-template-columns: 56px minmax(0, 1fr);
+        gap: 10px;
+      }
+
+      .history-item:hover,
+      .history-item.active {
+        border-color: rgba(125, 211, 252, 0.36);
+        background: rgba(125, 211, 252, 0.08);
+      }
+
+      .thumb {
+        width: 56px;
+        height: 56px;
+        object-fit: cover;
+        border-radius: 12px;
+        background: #111827;
+        border: 1px solid var(--line);
+      }
+
+      .history-meta {
+        min-width: 0;
+      }
+
+      .history-meta b,
+      .history-meta span {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .history-meta b {
+        font-size: 12px;
+        font-weight: 650;
+      }
+
+      .history-meta span {
+        color: var(--muted);
+        font-size: 11px;
+        margin-top: 5px;
+      }
+
+      .workspace {
+        min-width: 0;
+        overflow: hidden;
+        display: grid;
+        grid-template-rows: auto 1fr;
+      }
+
+      .toolbar {
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .progress-rail {
+        height: 3px;
+        background: rgba(148, 163, 184, 0.16);
+        overflow: hidden;
+        display: none;
+      }
+
+      .progress-rail.show {
+        display: block;
+      }
+
+      .progress-bar {
+        height: 100%;
+        width: 100%;
+        background: linear-gradient(90deg, var(--brand), var(--brand-2));
+        transform-origin: left center;
+        transform: scaleX(1);
+        transition: transform 0.25s linear;
+      }
+
+      .toolbar-left,
+      .toolbar-right {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .btn {
+        color: var(--text);
+        background: rgba(30, 41, 59, 0.92);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 9px 12px;
+        font-size: 12px;
+      }
+
+      .btn:hover {
+        border-color: rgba(125, 211, 252, 0.55);
+      }
+
+      .btn.primary {
+        background: linear-gradient(135deg, #0ea5e9, #8b5cf6);
+        border-color: transparent;
+        color: white;
+        font-weight: 700;
+      }
+
+      .btn.danger {
+        color: #fecdd3;
+        border-color: rgba(251, 113, 133, 0.35);
+        background: rgba(127, 29, 29, 0.22);
+      }
+
+      .results-wrap {
+        min-height: 0;
+        overflow: auto;
+        padding: 18px;
+      }
+
+      .empty {
+        height: 100%;
+        min-height: 280px;
+        display: grid;
+        place-items: center;
+        text-align: center;
+        color: var(--muted);
+        border: 1px dashed rgba(148, 163, 184, 0.28);
+        border-radius: 20px;
+      }
+
+      .empty h2 {
+        color: var(--text);
+        margin: 0 0 8px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 16px;
+      }
+
+      .card {
+        overflow: hidden;
+        border-radius: 20px;
+        border: 1px solid var(--line);
+        background: rgba(15, 23, 42, 0.72);
+      }
+
+      .image-shell {
+        position: relative;
+        background:
+          linear-gradient(45deg, rgba(148, 163, 184, 0.08) 25%, transparent 25%),
+          linear-gradient(-45deg, rgba(148, 163, 184, 0.08) 25%, transparent 25%),
+          linear-gradient(45deg, transparent 75%, rgba(148, 163, 184, 0.08) 75%),
+          linear-gradient(-45deg, transparent 75%, rgba(148, 163, 184, 0.08) 75%);
+        background-size: 24px 24px;
+        background-position: 0 0, 0 12px, 12px -12px, -12px 0;
+      }
+
+      .result-img {
+        width: 100%;
+        aspect-ratio: 16 / 10;
+        object-fit: contain;
+        display: block;
+        background: rgba(2, 6, 23, 0.6);
+      }
+
+      .badge {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        padding: 6px 8px;
+        border-radius: 999px;
+        background: rgba(2, 6, 23, 0.72);
+        color: #dbeafe;
+        border: 1px solid rgba(219, 234, 254, 0.2);
+        font-size: 11px;
+      }
+
+      .card-body {
+        padding: 12px;
+      }
+
+      .card-body p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.55;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 11px;
+      }
+
+      .composer {
+        padding: 12px 20px 18px;
+        background: rgba(7, 16, 23, 0.8);
+        border-top: 1px solid var(--line);
+        backdrop-filter: blur(18px);
+      }
+
+      .composer-panel {
+        max-width: 1380px;
+        margin: 0 auto;
+        background: var(--panel-strong);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        box-shadow: var(--shadow);
+        padding: 12px;
+      }
+
+      .dropzone {
+        border: 1px dashed rgba(148, 163, 184, 0.34);
+        border-radius: 16px;
+        padding: 10px;
+        color: var(--muted);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      .dropzone.dragover {
+        border-color: var(--brand);
+        background: rgba(125, 211, 252, 0.08);
+      }
+
+      .upload-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 8px;
+      }
+
+      .upload-empty {
+        padding: 8px 10px;
+        border-radius: 12px;
+        background: rgba(15, 23, 42, 0.48);
+        font-size: 12px;
+      }
+
+      .upload-card {
+        position: relative;
+        overflow: hidden;
+        min-height: 126px;
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        background: rgba(15, 23, 42, 0.72);
+      }
+
+      .upload-card img {
+        width: 100%;
+        height: 96px;
+        display: block;
+        object-fit: cover;
+      }
+
+      .upload-name {
+        display: block;
+        padding: 7px 34px 7px 8px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .upload-remove {
+        position: absolute;
+        right: 6px;
+        bottom: 5px;
+        width: 24px;
+        height: 24px;
+        border-radius: 999px;
+        color: #fecdd3;
+        background: rgba(127, 29, 29, 0.82);
+        border: 1px solid rgba(251, 113, 133, 0.45);
+      }
+
+      .prompt-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+        align-items: end;
+      }
+
+      textarea,
+      input,
+      select {
+        width: 100%;
+        border: 1px solid rgba(148, 163, 184, 0.24);
+        border-radius: 14px;
+        background: rgba(2, 6, 23, 0.58);
+        color: var(--text);
+        outline: none;
+      }
+
+      textarea:focus,
+      input:focus,
+      select:focus {
+        border-color: rgba(125, 211, 252, 0.66);
+        box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.14);
+      }
+
+      textarea {
+        min-height: 82px;
+        resize: vertical;
+        padding: 13px 14px;
+        line-height: 1.5;
+      }
+
+      .send-col {
+        display: grid;
+        gap: 8px;
+        width: 142px;
+      }
+
+      .send-col .btn {
+        min-height: 44px;
+      }
+
+      .form-grid {
+        margin-top: 10px;
+        display: grid;
+        grid-template-columns: repeat(8, minmax(90px, 1fr));
+        gap: 10px;
+      }
+
+      .field {
+        display: grid;
+        gap: 6px;
+      }
+
+      .field.wide {
+        grid-column: span 2;
+      }
+
+      .field label {
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .field input,
+      .field select {
+        height: 38px;
+        padding: 0 10px;
+      }
+
+      .negative-row,
+      .advanced-row {
+        margin-top: 10px;
+        display: none;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .negative-row.show,
+      .advanced-row.show {
+        display: grid;
+      }
+
+      .negative-row .field,
+      .advanced-row .field.big {
+        grid-column: span 2;
+      }
+
+      .switches {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .switch {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        color: var(--muted);
+        border: 1px solid var(--line);
+        background: rgba(15, 23, 42, 0.58);
+        padding: 7px 9px;
+        border-radius: 999px;
+        font-size: 12px;
+      }
+
+      .switch input {
+        width: auto;
+      }
+
+      .toast {
+        position: fixed;
+        right: 18px;
+        bottom: 18px;
+        max-width: 420px;
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: rgba(15, 23, 42, 0.95);
+        box-shadow: var(--shadow);
+        color: var(--text);
+        display: none;
+        z-index: 30;
+      }
+
+      .toast.show {
+        display: block;
+      }
+
+      .login {
+        position: fixed;
+        inset: 0;
+        display: none;
+        place-items: center;
+        background: rgba(2, 6, 23, 0.82);
+        backdrop-filter: blur(16px);
+        z-index: 50;
+        padding: 20px;
+      }
+
+      .login.show {
+        display: grid;
+      }
+
+      .login-card {
+        width: min(440px, 100%);
+        background: var(--panel-strong);
+        border: 1px solid var(--line);
+        border-radius: 26px;
+        padding: 22px;
+        box-shadow: var(--shadow);
+      }
+
+      .login-card h2 {
+        margin: 0 0 8px;
+      }
+
+      .login-card p {
+        margin: 0 0 16px;
+        color: var(--muted);
+      }
+
+      .login-card input {
+        height: 44px;
+        padding: 0 12px;
+      }
+
+      .login-card .btn {
+        width: 100%;
+        margin-top: 10px;
+        height: 44px;
+      }
+
+      .login-card .field {
+        margin-top: 10px;
+      }
+
+      .login-card .field input {
+        height: 44px;
+        padding: 0 12px;
+      }
+
+      .first-setup-fields {
+        display: none;
+        margin-top: 12px;
+      }
+
+      .first-setup-fields.show {
+        display: block;
+      }
+
+      .modal-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-top: 10px;
+      }
+
+      @media (max-width: 980px) {
+        body { overflow: auto; }
+        .app { min-height: 100%; height: auto; }
+        .topbar { grid-template-columns: 1fr; }
+        .status-row { justify-content: flex-start; }
+        .main { grid-template-columns: 1fr; }
+        .sidebar { max-height: 320px; }
+        .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .negative-row,
+        .advanced-row { grid-template-columns: 1fr; }
+        .negative-row .field,
+        .advanced-row .field.big { grid-column: auto; }
+        .prompt-row { grid-template-columns: 1fr; }
+        .send-col { width: 100%; grid-template-columns: 1fr 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div class="brand">
+          <h1>Image Lab 出图工作台</h1>
+          <p id="subtitle">文生图 / 图生图 / 同 seed 组图 / 本地缓存 / 下载</p>
+        </div>
+        <div class="status-row">
+          <span class="pill"><i id="apiDot" class="dot warn"></i><span id="apiStatus">接口检测中</span></span>
+          <span class="pill"><span id="providerStatus">Provider: -</span></span>
+          <span class="pill"><span id="jobStatus">空闲</span></span>
+          <span class="pill"><span id="historyStatus">历史 0</span></span>
+        </div>
+      </header>
+
+      <main class="main">
+        <aside class="panel sidebar">
+          <div class="panel-head">
+            <div class="panel-title">
+              <strong>历史记录</strong>
+              <span>刷新不丢，图片地址和可缓存数据保存在浏览器</span>
+            </div>
+            <button id="clearHistoryBtn" class="btn danger" type="button">清空</button>
+          </div>
+          <div id="history" class="history"></div>
+        </aside>
+
+        <section class="panel workspace">
+          <div class="toolbar">
+            <div class="toolbar-left">
+              <button id="loadLatestBtn" class="btn" type="button">载入最新</button>
+              <button id="reuseBtn" class="btn" type="button">复用参数</button>
+              <button id="downloadAllBtn" class="btn" type="button">下载当前组</button>
+              <button id="settingsBtn" class="btn" type="button">设置</button>
+            </div>
+            <div class="toolbar-right">
+              <span class="pill">当前结果 <b id="currentCount">0</b></span>
+              <span class="pill">尺寸 <b id="currentSize">-</b></span>
+              <span class="pill">耗时 <b id="currentElapsed">-</b></span>
+            </div>
+          </div>
+          <div id="progressRail" class="progress-rail">
+            <div id="progressBar" class="progress-bar"></div>
+          </div>
+          <div id="results" class="results-wrap">
+            <div class="empty">
+              <div>
+                <h2>先写提示词，然后点生成</h2>
+                <div>支持上传参考图切换图生图，也可以固定 seed 连续出一组。</div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer class="composer">
+        <form id="form" class="composer-panel">
+          <div id="dropzone" class="dropzone">
+            <strong>参考图</strong>
+            <div id="uploadList" class="upload-list"></div>
+            <span>拖入图片或点击“传图”。上传后会自动切换图生图；如果 edits 上游 503，会自动 fallback 到 Responses 参考图路径。</span>
+          </div>
+
+          <div class="prompt-row">
+            <textarea id="prompt" placeholder="描述你要生成的画面，例如：电影级雨夜街头，霓虹反光，人物背影，35mm 胶片质感..." required></textarea>
+            <div class="send-col">
+              <button id="submitBtn" class="btn primary" type="submit">生成图片</button>
+              <button id="uploadBtn" class="btn" type="button">传图</button>
+              <input id="fileInput" type="file" accept="image/*" multiple hidden />
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="field">
+              <label for="aspectRatio">比例</label>
+              <select id="aspectRatio">
+                <option value="16:9">16:9 横屏</option>
+                <option value="9:21">9:21 手机长屏</option>
+                <option value="9:16">9:16 竖屏</option>
+                <option value="1:1">1:1 方图</option>
+                <option value="4:3">4:3</option>
+                <option value="3:4">3:4</option>
+                <option value="3:2">3:2</option>
+                <option value="2:3">2:3 海报</option>
+                <option value="21:9">21:9 超宽</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="longEdge">长边</label>
+              <select id="longEdge">
+                <option value="1024">1024</option>
+                <option value="1536" selected>1536</option>
+                <option value="1792">1792</option>
+                <option value="2048">2048</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="count">张数</label>
+              <select id="count">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="seed">Seed</label>
+              <input id="seed" type="number" placeholder="随机" />
+            </div>
+            <div class="field">
+              <label for="outputFormat">格式</label>
+              <select id="outputFormat">
+                <option value="png">png</option>
+                <option value="jpeg">jpeg</option>
+                <option value="webp">webp</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="quality">质量</label>
+              <select id="quality">
+                <option value="">默认</option>
+                <option value="low">low</option>
+                <option value="medium">medium</option>
+                <option value="high">high</option>
+                <option value="hd">hd</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="mode">模式</label>
+              <select id="mode">
+                <option value="auto">自动</option>
+                <option value="text_to_image">文生图</option>
+                <option value="image_to_image">图生图</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="endpoint">接口</label>
+              <select id="endpoint">
+                <option value="auto">auto</option>
+                <option value="images_generations">images</option>
+                <option value="images_edits">edits</option>
+                <option value="responses">responses</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="switches">
+            <label class="switch"><input id="sameSeedGroup" type="checkbox" checked /> 同 seed 组图</label>
+            <label class="switch"><input id="showNegative" type="checkbox" /> 负面提示词</label>
+            <label class="switch"><input id="showAdvanced" type="checkbox" /> 高级参数</label>
+            <label class="switch"><input id="saveServer" type="checkbox" checked /> 服务端保存</label>
+            <label class="switch"><input id="cacheImages" type="checkbox" checked /> 浏览器缓存图片</label>
+          </div>
+
+          <div id="negativeRow" class="negative-row">
+            <div class="field">
+              <label for="negativePrompt">负面提示词 / Avoid</label>
+              <textarea id="negativePrompt" placeholder="不要：低清、畸形手、文字水印、脸部崩坏、过曝..." rows="2"></textarea>
+            </div>
+          </div>
+
+          <div id="advancedRow" class="advanced-row">
+            <div class="field">
+              <label for="provider">Provider</label>
+              <input id="provider" placeholder="留空用默认" />
+            </div>
+            <div class="field">
+              <label for="model">图像模型</label>
+              <input id="model" placeholder="例如 grok-imagine-image-lite" />
+            </div>
+            <div class="field">
+              <label for="responseModel">Responses 模型</label>
+              <input id="responseModel" placeholder="可选" />
+            </div>
+            <div class="field">
+              <label for="retryCount">重试</label>
+              <input id="retryCount" type="number" min="0" max="5" value="2" />
+            </div>
+            <div class="field big">
+              <label for="upstreamBaseUrl">出图 URL</label>
+              <input id="upstreamBaseUrl" placeholder="例如 https://api.example.com/v1" autocomplete="off" />
+            </div>
+            <div class="field big">
+              <label for="upstreamApiKey">出图 Key</label>
+              <input id="upstreamApiKey" type="password" placeholder="保存到本浏览器缓存" autocomplete="off" />
+            </div>
+            <div class="field big">
+              <label for="apiBase">API 地址</label>
+              <input id="apiBase" value="" placeholder="默认同域 /api/images" />
+            </div>
+            <div class="field">
+              <label for="newPassword">修改密码</label>
+              <input id="newPassword" type="password" placeholder="留空不改" autocomplete="new-password" />
+            </div>
+            <div class="field big">
+              <label for="filePrefix">文件前缀</label>
+              <input id="filePrefix" value="image_lab" />
+            </div>
+          </div>
+        </form>
+      </footer>
+    </div>
+
+    <div id="login" class="login">
+      <form id="loginForm" class="login-card">
+        <h2>进入 Image Lab</h2>
+        <p>请输入访问密码。远程 nginx 还可以再套 Basic Auth；这里用于前端快速保护。</p>
+        <input type="text" name="username" value="image-lab" autocomplete="username" hidden />
+        <input id="loginPassword" type="password" placeholder="密码" autocomplete="current-password" />
+        <div id="firstSetupFields" class="first-setup-fields">
+          <div class="field">
+            <label for="setupBaseUrl">出图 URL</label>
+            <input id="setupBaseUrl" placeholder="https://api.jucode.cn/v1" autocomplete="off" />
+          </div>
+          <div class="field">
+            <label for="setupApiKey">出图 Key</label>
+            <input id="setupApiKey" type="password" placeholder="sk-..." autocomplete="off" />
+          </div>
+          <div class="field">
+            <label for="setupModel">图像模型</label>
+            <input id="setupModel" placeholder="gpt-image-2" autocomplete="off" />
+          </div>
+        </div>
+        <button id="loginBtn" class="btn primary" type="submit">进入</button>
+      </form>
+    </div>
+
+    <div id="settingsModal" class="login">
+      <form id="settingsForm" class="login-card">
+        <h2>Image Lab 设置</h2>
+        <p>修改后会保存到本浏览器缓存。新密码留空表示不改。</p>
+        <div class="field">
+          <label for="settingsBaseUrl">出图 URL</label>
+          <input id="settingsBaseUrl" placeholder="https://api.jucode.cn/v1" autocomplete="off" />
+        </div>
+        <div class="field">
+          <label for="settingsApiKey">出图 Key</label>
+          <input id="settingsApiKey" type="password" placeholder="sk-..." autocomplete="off" />
+        </div>
+        <div class="field">
+          <label for="settingsModel">图像模型</label>
+          <input id="settingsModel" placeholder="gpt-image-2" autocomplete="off" />
+        </div>
+        <div class="field">
+          <label for="settingsProvider">Provider</label>
+          <input id="settingsProvider" placeholder="jucode" autocomplete="off" />
+        </div>
+        <div class="field">
+          <label for="settingsNewPassword">修改密码</label>
+          <input id="settingsNewPassword" type="password" placeholder="留空不改" autocomplete="new-password" />
+        </div>
+        <div class="modal-actions">
+          <button id="settingsCancelBtn" class="btn" type="button">取消</button>
+          <button class="btn primary" type="submit">保存设置</button>
+        </div>
+      </form>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+      const DB_NAME = "image-lab-db";
+      const DB_VERSION = 1;
+      const STORE = "jobs";
+      const SETTINGS_STORAGE_KEY = "imageLabSettings";
+      const PASSWORD_STORAGE_KEY = "imageLabPasswordHash";
+      const state = {
+        db: null,
+        history: [],
+        currentJob: null,
+        uploads: [],
+        busy: false,
+        aborter: null,
+        progressTimer: null,
+        progressStartedAt: 0,
+        progressDurationMs: 60000,
+        presets: [],
+        capabilities: null,
+      };
+
+      const $ = (id) => document.getElementById(id);
+      const els = {
+        apiDot: $("apiDot"),
+        apiStatus: $("apiStatus"),
+        providerStatus: $("providerStatus"),
+        jobStatus: $("jobStatus"),
+        historyStatus: $("historyStatus"),
+        history: $("history"),
+        results: $("results"),
+        progressRail: $("progressRail"),
+        progressBar: $("progressBar"),
+        currentCount: $("currentCount"),
+        currentSize: $("currentSize"),
+        currentElapsed: $("currentElapsed"),
+        form: $("form"),
+        prompt: $("prompt"),
+        negativePrompt: $("negativePrompt"),
+        aspectRatio: $("aspectRatio"),
+        longEdge: $("longEdge"),
+        count: $("count"),
+        seed: $("seed"),
+        outputFormat: $("outputFormat"),
+        quality: $("quality"),
+        mode: $("mode"),
+        endpoint: $("endpoint"),
+        sameSeedGroup: $("sameSeedGroup"),
+        showNegative: $("showNegative"),
+        showAdvanced: $("showAdvanced"),
+        saveServer: $("saveServer"),
+        cacheImages: $("cacheImages"),
+        provider: $("provider"),
+        model: $("model"),
+        responseModel: $("responseModel"),
+        retryCount: $("retryCount"),
+        upstreamBaseUrl: $("upstreamBaseUrl"),
+        upstreamApiKey: $("upstreamApiKey"),
+        apiBase: $("apiBase"),
+        newPassword: $("newPassword"),
+        filePrefix: $("filePrefix"),
+        negativeRow: $("negativeRow"),
+        advancedRow: $("advancedRow"),
+        submitBtn: $("submitBtn"),
+        uploadBtn: $("uploadBtn"),
+        fileInput: $("fileInput"),
+        uploadList: $("uploadList"),
+        dropzone: $("dropzone"),
+        clearHistoryBtn: $("clearHistoryBtn"),
+        loadLatestBtn: $("loadLatestBtn"),
+        reuseBtn: $("reuseBtn"),
+        downloadAllBtn: $("downloadAllBtn"),
+        settingsBtn: $("settingsBtn"),
+        login: $("login"),
+        loginPassword: $("loginPassword"),
+        loginBtn: $("loginBtn"),
+        loginForm: $("loginForm"),
+        firstSetupFields: $("firstSetupFields"),
+        setupBaseUrl: $("setupBaseUrl"),
+        setupApiKey: $("setupApiKey"),
+        setupModel: $("setupModel"),
+        settingsModal: $("settingsModal"),
+        settingsForm: $("settingsForm"),
+        settingsBaseUrl: $("settingsBaseUrl"),
+        settingsApiKey: $("settingsApiKey"),
+        settingsModel: $("settingsModel"),
+        settingsProvider: $("settingsProvider"),
+        settingsNewPassword: $("settingsNewPassword"),
+        settingsCancelBtn: $("settingsCancelBtn"),
+        toast: $("toast"),
+      };
+
+      function apiBase() {
+        return (els.apiBase.value || "/api/images").replace(/\/$/, "");
+      }
+
+      function readStoredSettings() {
+        try {
+          const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+          const parsed = raw ? JSON.parse(raw) : {};
+          return parsed && typeof parsed === "object" ? parsed : {};
+        } catch (_) {
+          return {};
+        }
+      }
+
+      function writeStoredSettings(patch) {
+        const next = { ...readStoredSettings(), ...patch };
+        localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(next));
+      }
+
+      function normalizeBaseUrl(value) {
+        const text = String(value || "").trim().replace(/\/$/, "");
+        if (!text) return "";
+        return text.endsWith("/v1") ? text : `${text}/v1`;
+      }
+
+      function applyStoredSettings() {
+        const settings = readStoredSettings();
+        els.apiBase.value = settings.apiBase || "";
+        els.upstreamBaseUrl.value = settings.upstreamBaseUrl || "";
+        els.upstreamApiKey.value = settings.upstreamApiKey || "";
+        els.provider.value = settings.provider || "";
+        els.model.value = settings.model || "";
+        els.responseModel.value = settings.responseModel || "";
+        els.retryCount.value = String(settings.retryCount ?? els.retryCount.value ?? 2);
+        els.filePrefix.value = settings.filePrefix || els.filePrefix.value || "image_lab";
+      }
+
+      function syncSettingsModalFromForm() {
+        els.settingsBaseUrl.value = els.upstreamBaseUrl.value || "";
+        els.settingsApiKey.value = els.upstreamApiKey.value || "";
+        els.settingsModel.value = els.model.value || "";
+        els.settingsProvider.value = els.provider.value || "";
+        els.settingsNewPassword.value = "";
+      }
+
+      function applySettingsValues(values) {
+        if (values.upstreamBaseUrl !== undefined) els.upstreamBaseUrl.value = normalizeBaseUrl(values.upstreamBaseUrl);
+        if (values.upstreamApiKey !== undefined) els.upstreamApiKey.value = String(values.upstreamApiKey || "").trim();
+        if (values.model !== undefined) els.model.value = String(values.model || "").trim();
+        if (values.provider !== undefined) els.provider.value = String(values.provider || "").trim();
+        if (values.responseModel !== undefined) els.responseModel.value = String(values.responseModel || "").trim();
+        if (values.apiBase !== undefined) els.apiBase.value = String(values.apiBase || "").trim();
+        if (values.filePrefix !== undefined) els.filePrefix.value = String(values.filePrefix || "").trim() || "image_lab";
+        if (values.retryCount !== undefined) els.retryCount.value = String(values.retryCount);
+      }
+
+      function persistSettingsFromForm() {
+        const newPassword = els.newPassword.value.trim();
+        writeStoredSettings({
+          apiBase: els.apiBase.value.trim(),
+          upstreamBaseUrl: normalizeBaseUrl(els.upstreamBaseUrl.value),
+          upstreamApiKey: els.upstreamApiKey.value.trim(),
+          provider: els.provider.value.trim(),
+          model: els.model.value.trim(),
+          responseModel: els.responseModel.value.trim(),
+          retryCount: Number(els.retryCount.value || 0),
+          filePrefix: els.filePrefix.value.trim() || "image_lab",
+        });
+        if (newPassword) {
+          localStorage.setItem(PASSWORD_STORAGE_KEY, hashPassword(newPassword));
+          els.newPassword.value = "";
+          toast("设置已保存，访问密码已更新。", "good");
+        }
+      }
+
+      function hashPassword(value) {
+        let hash = 5381;
+        const text = String(value || "");
+        for (let index = 0; index < text.length; index += 1) {
+          hash = ((hash << 5) + hash) ^ text.charCodeAt(index);
+        }
+        return String(hash >>> 0);
+      }
+
+      function hasPassword() {
+        return Boolean(localStorage.getItem(PASSWORD_STORAGE_KEY));
+      }
+
+      function hasUpstreamSettings() {
+        const settings = readStoredSettings();
+        return Boolean(String(settings.upstreamBaseUrl || "").trim() && String(settings.upstreamApiKey || "").trim());
+      }
+
+      function showSettingsModal() {
+        syncSettingsModalFromForm();
+        els.settingsModal.classList.add("show");
+        setTimeout(() => els.settingsBaseUrl.focus(), 50);
+      }
+
+      function toast(message, tone = "info") {
+        els.toast.textContent = message;
+        els.toast.style.borderColor = tone === "bad" ? "rgba(251,113,133,.45)" : tone === "good" ? "rgba(52,211,153,.45)" : "rgba(148,163,184,.26)";
+        els.toast.classList.add("show");
+        clearTimeout(toast.timer);
+        toast.timer = setTimeout(() => els.toast.classList.remove("show"), 3600);
+      }
+
+      function setApiStatus(kind, text) {
+        els.apiDot.className = "dot " + kind;
+        els.apiStatus.textContent = text;
+      }
+
+      function setBusy(busy, text = "") {
+        state.busy = busy;
+        els.submitBtn.disabled = busy;
+        els.submitBtn.textContent = busy ? "生成中..." : "生成图片";
+        els.jobStatus.textContent = text || (busy ? "生成中" : "空闲");
+      }
+
+      function startFakeProgress(seconds = 60) {
+        clearInterval(state.progressTimer);
+        state.progressStartedAt = performance.now();
+        state.progressDurationMs = Math.max(1, seconds) * 1000;
+        els.progressBar.style.transform = "scaleX(1)";
+        els.progressRail.classList.add("show");
+        state.progressTimer = setInterval(() => {
+          const elapsed = performance.now() - state.progressStartedAt;
+          const remaining = Math.max(0, 1 - elapsed / state.progressDurationMs);
+          els.progressBar.style.transform = `scaleX(${remaining})`;
+          const secondsLeft = Math.max(0, Math.ceil((state.progressDurationMs - elapsed) / 1000));
+          if (state.busy) els.jobStatus.textContent = `生成中，约 ${secondsLeft}s`;
+          if (remaining <= 0) clearInterval(state.progressTimer);
+        }, 250);
+      }
+
+      function stopFakeProgress() {
+        clearInterval(state.progressTimer);
+        state.progressTimer = null;
+        els.progressBar.style.transform = "scaleX(0)";
+        setTimeout(() => {
+          if (!state.busy) els.progressRail.classList.remove("show");
+        }, 260);
+      }
+
+      function openDb() {
+        return new Promise((resolve, reject) => {
+          const request = indexedDB.open(DB_NAME, DB_VERSION);
+          request.onupgradeneeded = () => {
+            const db = request.result;
+            if (!db.objectStoreNames.contains(STORE)) {
+              const store = db.createObjectStore(STORE, { keyPath: "id" });
+              store.createIndex("createdAt", "createdAt");
+            }
+          };
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        });
+      }
+
+      function tx(mode = "readonly") {
+        return state.db.transaction(STORE, mode).objectStore(STORE);
+      }
+
+      function readAllJobs() {
+        return new Promise((resolve, reject) => {
+          const req = tx().getAll();
+          req.onsuccess = () => resolve(req.result.sort((a, b) => b.createdAt - a.createdAt));
+          req.onerror = () => reject(req.error);
+        });
+      }
+
+      function saveJob(job) {
+        return new Promise((resolve, reject) => {
+          const req = tx("readwrite").put(job);
+          req.onsuccess = () => resolve();
+          req.onerror = () => reject(req.error);
+        });
+      }
+
+      function clearJobs() {
+        return new Promise((resolve, reject) => {
+          const req = tx("readwrite").clear();
+          req.onsuccess = () => resolve();
+          req.onerror = () => reject(req.error);
+        });
+      }
+
+      async function loadHistory() {
+        state.history = await readAllJobs();
+        renderHistory();
+        els.historyStatus.textContent = `历史 ${state.history.length}`;
+      }
+
+      function pickPreview(job) {
+        const image = (job.images || [])[0];
+        return image ? image.displayUrl || image.url || image.assetUrl || "" : "";
+      }
+
+      function renderHistory() {
+        if (!state.history.length) {
+          els.history.innerHTML = `<div class="empty" style="min-height:160px"><div>暂无历史</div></div>`;
+          return;
+        }
+        els.history.innerHTML = state.history.map((job) => {
+          const active = state.currentJob && state.currentJob.id === job.id ? " active" : "";
+          const preview = pickPreview(job);
+          const time = new Date(job.createdAt).toLocaleString();
+          return `<button class="history-item${active}" type="button" data-job="${job.id}">
+            ${preview ? `<img class="thumb" src="${escapeAttr(preview)}" alt="preview" />` : `<div class="thumb"></div>`}
+            <span class="history-meta"><b>${escapeHtml(job.prompt || "未命名")}</b><span>${time} · ${(job.images || []).length} 张 · ${escapeHtml(job.settings?.aspect_ratio || "-")}</span></span>
+          </button>`;
+        }).join("");
+      }
+
+      function renderCurrentJob() {
+        const job = state.currentJob;
+        renderHistory();
+        if (!job) {
+          els.currentCount.textContent = "0";
+          els.currentSize.textContent = "-";
+          els.currentElapsed.textContent = "-";
+          els.results.innerHTML = `<div class="empty"><div><h2>先写提示词，然后点生成</h2><div>支持上传参考图切换图生图，也可以固定 seed 连续出一组。</div></div></div>`;
+          return;
+        }
+        const images = job.images || [];
+        els.currentCount.textContent = String(images.length);
+        els.currentSize.textContent = job.result?.size || job.settings?.size || "-";
+        els.currentElapsed.textContent = job.elapsedMs ? `${(job.elapsedMs / 1000).toFixed(1)}s` : "-";
+        if (!images.length) {
+          els.results.innerHTML = `<div class="empty"><div><h2>这组没有图片</h2><div>可以复用参数再试一次。</div></div></div>`;
+          return;
+        }
+        els.results.innerHTML = `<div class="grid">${images.map((image, index) => cardHtml(job, image, index)).join("")}</div>`;
+      }
+
+      function cardHtml(job, image, index) {
+        const src = image.displayUrl || image.url || image.assetUrl || "";
+        const size = image.actual_size || image.actualSize || job.result?.size || "-";
+        const model = job.result?.model || job.settings?.model || "默认模型";
+        const provider = job.result?.provider || job.settings?.provider || "默认 provider";
+        return `<article class="card">
+          <div class="image-shell">
+            <img class="result-img" src="${escapeAttr(src)}" alt="generated image ${index + 1}" loading="lazy" />
+            <span class="badge">#${index + 1} · ${escapeHtml(size)}</span>
+          </div>
+          <div class="card-body">
+            <p>${escapeHtml(job.prompt || "")}</p>
+            <p style="margin-top:6px">${escapeHtml(provider)} · ${escapeHtml(model)} · seed ${job.settings?.seed ?? "随机"}</p>
+            <div class="actions">
+              <button class="btn" type="button" data-action="download" data-job="${job.id}" data-index="${index}">下载</button>
+              <button class="btn" type="button" data-action="open" data-job="${job.id}" data-index="${index}">打开</button>
+              <button class="btn" type="button" data-action="copy" data-job="${job.id}" data-index="${index}">复制地址</button>
+              <button class="btn" type="button" data-action="reuse-image" data-job="${job.id}" data-index="${index}">作为参考图</button>
+            </div>
+          </div>
+        </article>`;
+      }
+
+      async function detectApi() {
+        try {
+          setApiStatus("warn", "接口检测中");
+          const [presets, capabilities] = await Promise.all([
+            fetch(`${apiBase()}/presets/aspect-ratios`).then((r) => r.ok ? r.json() : Promise.reject(r)),
+            fetch(`${apiBase()}/capabilities`).then((r) => r.ok ? r.json() : Promise.reject(r)),
+          ]);
+          state.presets = presets.presets || [];
+          state.capabilities = capabilities;
+          const providers = capabilities.providers || [];
+          const first = providers[0] || {};
+          els.providerStatus.textContent = `Provider: ${first.name || first.provider || providers.length || "可用"}`;
+          setApiStatus("good", "接口可用");
+        } catch (error) {
+          setApiStatus("bad", "接口不可用");
+          els.providerStatus.textContent = "Provider: 未连接";
+        }
+      }
+
+      function collectSettings() {
+        const seedText = els.seed.value.trim();
+        const seed = seedText ? Number(seedText) : undefined;
+        return {
+          prompt: els.prompt.value.trim(),
+          negative_prompt: els.negativePrompt.value.trim(),
+          aspect_ratio: els.aspectRatio.value,
+          long_edge: Number(els.longEdge.value || 1536),
+          n: Number(els.count.value || 1),
+          seed,
+          output_format: els.outputFormat.value,
+          quality: els.quality.value || undefined,
+          mode: els.mode.value,
+          endpoint: els.endpoint.value,
+          provider: els.provider.value.trim() || undefined,
+          model: els.model.value.trim() || undefined,
+          response_model: els.responseModel.value.trim() || undefined,
+          base_url_override: els.upstreamBaseUrl.value.trim() || undefined,
+          api_key_override: els.upstreamApiKey.value.trim() || undefined,
+          retry_count: Number(els.retryCount.value || 0),
+          save: els.saveServer.checked,
+          file_name_prefix: els.filePrefix.value.trim() || "image_lab",
+        };
+      }
+
+      function buildRequest(settings, index = 0) {
+        const payload = {
+          prompt: settings.prompt,
+          negative_prompt: settings.negative_prompt,
+          aspect_ratio: settings.aspect_ratio,
+          long_edge: settings.long_edge,
+          output_format: settings.output_format,
+          mode: settings.mode,
+          endpoint: settings.endpoint,
+          retry_count: settings.retry_count,
+          save: settings.save,
+          file_name_prefix: `${settings.file_name_prefix}_${Date.now()}_${index + 1}`,
+          input_images: state.uploads.map((item) => ({
+            data_url: item.dataUrl,
+            filename: item.name,
+            content_type: item.type,
+          })),
+        };
+        if (settings.quality) payload.quality = settings.quality;
+        if (settings.provider) payload.provider = settings.provider;
+        if (settings.model) payload.model = settings.model;
+        if (settings.response_model) payload.response_model = settings.response_model;
+        if (settings.base_url_override) payload.base_url_override = settings.base_url_override;
+        if (settings.api_key_override) payload.api_key_override = settings.api_key_override;
+        if (settings.seed !== undefined && !Number.isNaN(settings.seed)) payload.seed = settings.seed;
+        return payload;
+      }
+
+      async function submitGenerate(event) {
+        event.preventDefault();
+        if (state.busy) return;
+        const settings = collectSettings();
+        if (!settings.prompt) {
+          toast("先写提示词。", "bad");
+          return;
+        }
+        if (state.uploads.length && settings.mode === "text_to_image") {
+          settings.mode = "image_to_image";
+        }
+        persistSettingsFromForm();
+        const total = Math.max(1, Math.min(8, Number(settings.n || 1)));
+        const started = performance.now();
+        const job = {
+          id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+          createdAt: Date.now(),
+          prompt: settings.prompt,
+          negativePrompt: settings.negative_prompt,
+          settings: { ...settings, api_key_override: undefined },
+          uploads: state.uploads.map(({ name, type, dataUrl }) => ({ name, type, dataUrl })),
+          images: [],
+          result: null,
+          errors: [],
+        };
+        state.currentJob = job;
+        renderCurrentJob();
+        setBusy(true, `生成中 0/${total}`);
+        startFakeProgress(60);
+
+        try {
+          if (total > 1 && els.sameSeedGroup.checked) {
+            const requests = Array.from({ length: total }, (_, index) => ({ ...buildRequest(settings, index), n: 1 }));
+            const batch = await postJson(`${apiBase()}/batch-render`, { requests, continue_on_error: true });
+            const results = batch.results || [];
+            for (const item of results) {
+              if (item.success && item.result) appendResultImages(job, item.result);
+              else job.errors.push(item.error || item);
+            }
+            job.result = summarizeBatch(batch, job);
+          } else {
+            const payload = buildRequest(settings, 0);
+            payload.n = total;
+            const result = await postJson(`${apiBase()}/generate`, payload);
+            appendResultImages(job, result);
+            job.result = result;
+          }
+          job.elapsedMs = Math.round(performance.now() - started);
+          if (!job.images.length && job.errors.length) throw new Error(job.errors.map((e) => e.message || JSON.stringify(e)).join("; "));
+          await maybeCacheJob(job);
+          await loadHistory();
+          state.currentJob = job;
+          renderCurrentJob();
+          toast(`完成：${job.images.length} 张，耗时 ${(job.elapsedMs / 1000).toFixed(1)}s`, "good");
+        } catch (error) {
+          job.elapsedMs = Math.round(performance.now() - started);
+          job.errors.push({ message: error.message || String(error) });
+          state.currentJob = job;
+          renderCurrentJob();
+          toast(error.message || String(error), "bad");
+        } finally {
+          setBusy(false);
+          stopFakeProgress();
+        }
+      }
+
+      async function postJson(url, payload) {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const text = await response.text();
+        let data = null;
+        try { data = text ? JSON.parse(text) : null; } catch (_) { data = { raw: text }; }
+        if (!response.ok) {
+          const detail = data && data.detail;
+          const message = typeof detail === "string" ? detail : detail?.message || data?.message || text || `HTTP ${response.status}`;
+          throw new Error(message);
+        }
+        return data || {};
+      }
+
+      function appendResultImages(job, result) {
+        const saved = result.saved_images || [];
+        const rawImages = result.images || [];
+        rawImages.forEach((item, index) => {
+          const savedItem = saved[index] || {};
+          const dataUrl = item.b64_json ? `data:image/${item.output_format || result.output_format || job.settings.output_format || "png"};base64,${item.b64_json}` : "";
+          job.images.push({
+            index: job.images.length,
+            dataUrl,
+            url: item.url || "",
+            assetUrl: savedItem.asset_url || "",
+            downloadUrl: savedItem.download_url || "",
+            displayUrl: dataUrl || item.url || savedItem.asset_url || "",
+            output_format: item.output_format || job.settings.output_format || "png",
+            actual_size: savedItem.actual_size || result.size || "",
+            saved: savedItem,
+          });
+        });
+      }
+
+      function summarizeBatch(batch, job) {
+        const first = (batch.results || []).find((item) => item.success && item.result)?.result || {};
+        return {
+          success: (batch.success_count || 0) > 0,
+          endpoint: first.endpoint || "batch",
+          provider: first.provider,
+          model: first.model,
+          mode: first.mode || job.settings.mode,
+          size: first.size,
+          success_count: batch.success_count,
+          failure_count: batch.failure_count,
+        };
+      }
+
+      async function maybeCacheJob(job) {
+        if (!els.cacheImages.checked) {
+          job.images = job.images.map((image) => ({ ...image, dataUrl: "", displayUrl: image.url || image.assetUrl || image.downloadUrl || "" }));
+        }
+        await saveJob(job);
+      }
+
+      async function handleFiles(files) {
+        const accepted = [...files].filter((file) => file.type.startsWith("image/"));
+        if (!accepted.length) return;
+        for (const file of accepted) {
+          const compressed = await compressImageFile(file);
+          state.uploads.push({
+            name: compressed.name,
+            originalName: file.name,
+            type: compressed.type,
+            dataUrl: compressed.dataUrl,
+            originalBytes: file.size,
+            bytes: compressed.bytes,
+          });
+        }
+        els.mode.value = "image_to_image";
+        els.endpoint.value = "auto";
+        renderUploads();
+        toast(`已加入 ${accepted.length} 张参考图，并压缩到适合上传的尺寸。`, "good");
+      }
+
+      function renderUploads() {
+        if (!state.uploads.length) {
+          els.uploadList.innerHTML = `<div class="upload-empty">暂无参考图。可拖拽图片到页面，或点击右侧“传图”。</div>`;
+          return;
+        }
+        els.uploadList.innerHTML = state.uploads.map((item, index) => `<div class="upload-card">
+          <img src="${escapeAttr(item.dataUrl)}" alt="${escapeAttr(item.name)}" />
+          <span class="upload-name">${escapeHtml(item.name)} · ${formatBytes(item.bytes || 0)}</span>
+          <button class="upload-remove" type="button" data-remove-upload="${index}" aria-label="删除参考图">×</button>
+        </div>`).join("");
+      }
+
+      function fileToDataUrl(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(reader.error);
+          reader.readAsDataURL(file);
+        });
+      }
+
+      async function compressImageFile(file) {
+        const sourceUrl = await fileToDataUrl(file);
+        const stem = file.name.replace(/\.[^.]+$/, "") || "reference";
+        return compressImageDataUrl(sourceUrl, stem);
+      }
+
+      async function compressImageDataUrl(sourceUrl, stem = "reference") {
+        const image = await loadImage(sourceUrl);
+        const targetBytes = 700 * 1024;
+        const sourceBytes = dataUrlBytes(sourceUrl);
+        let maxSide = sourceBytes > 2 * 1024 * 1024 ? 768 : 1024;
+        let quality = 0.82;
+        let dataUrl = "";
+        let bytes = 0;
+        for (let attempt = 0; attempt < 8; attempt += 1) {
+          const scale = Math.min(1, maxSide / Math.max(image.naturalWidth || image.width, image.naturalHeight || image.height));
+          const width = Math.max(1, Math.round((image.naturalWidth || image.width) * scale));
+          const height = Math.max(1, Math.round((image.naturalHeight || image.height) * scale));
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d", { alpha: false });
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, width, height);
+          ctx.drawImage(image, 0, 0, width, height);
+          dataUrl = canvas.toDataURL("image/jpeg", quality);
+          bytes = dataUrlBytes(dataUrl);
+          if (bytes <= targetBytes || maxSide <= 512) break;
+          quality = Math.max(0.62, quality - 0.08);
+          maxSide = Math.max(512, Math.round(maxSide * 0.82));
+        }
+        return { name: `${stem}_ref.jpg`, type: "image/jpeg", dataUrl, bytes };
+      }
+
+      function dataUrlBytes(dataUrl) {
+        const comma = dataUrl.indexOf(",");
+        if (comma < 0) return dataUrl.length;
+        return Math.round((dataUrl.length - comma - 1) * 0.75);
+      }
+
+      async function compressResultImageForReference(image, filename) {
+        const source = image.dataUrl || image.displayUrl || image.url || image.assetUrl || image.downloadUrl;
+        if (!source) throw new Error("没有可用的参考图数据");
+        const stem = filename.replace(/\.[^.]+$/, "") || "reference";
+        return compressImageDataUrl(source, stem);
+      }
+
+      function loadImage(src) {
+        return new Promise((resolve, reject) => {
+          const image = new Image();
+          image.onload = () => resolve(image);
+          image.onerror = () => reject(new Error("参考图预览读取失败"));
+          image.src = src;
+        });
+      }
+
+      function formatBytes(bytes) {
+        if (!bytes) return "0 B";
+        const units = ["B", "KB", "MB"];
+        let value = bytes;
+        let unit = 0;
+        while (value >= 1024 && unit < units.length - 1) {
+          value /= 1024;
+          unit += 1;
+        }
+        return `${value.toFixed(value >= 10 || unit === 0 ? 0 : 1)} ${units[unit]}`;
+      }
+
+      function fillFormFromJob(job) {
+        if (!job) return;
+        const s = job.settings || {};
+        els.prompt.value = job.prompt || s.prompt || "";
+        els.negativePrompt.value = job.negativePrompt || s.negative_prompt || "";
+        els.aspectRatio.value = s.aspect_ratio || "16:9";
+        els.longEdge.value = String(s.long_edge || 1536);
+        els.count.value = String(s.n || 1);
+        els.seed.value = s.seed === undefined ? "" : String(s.seed);
+        els.outputFormat.value = s.output_format || "png";
+        els.quality.value = s.quality || "";
+        els.mode.value = s.mode || "auto";
+        els.endpoint.value = s.endpoint || "auto";
+        els.provider.value = s.provider || "";
+        els.model.value = s.model || "";
+        els.responseModel.value = s.response_model || "";
+        els.upstreamBaseUrl.value = s.base_url_override || els.upstreamBaseUrl.value || "";
+        els.upstreamApiKey.value = s.api_key_override || els.upstreamApiKey.value || "";
+        els.retryCount.value = String(s.retry_count ?? 2);
+        els.saveServer.checked = s.save !== false;
+        els.filePrefix.value = s.file_name_prefix || "image_lab";
+        state.uploads = (job.uploads || []).map((item) => ({ ...item }));
+        renderUploads();
+      }
+
+      function downloadImage(image, filename) {
+        const href = image.dataUrl || image.displayUrl || image.url || image.downloadUrl || image.assetUrl;
+        if (!href) return toast("没有可下载地址。", "bad");
+        const a = document.createElement("a");
+        a.href = href;
+        a.download = filename;
+        if (/^https?:/.test(href)) a.target = "_blank";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }
+
+      function imageFileName(job, index, image) {
+        const ext = (image.output_format || job.settings?.output_format || "png").replace(/^\./, "");
+        const safe = (job.prompt || "image").slice(0, 24).replace(/[\\/:*?"<>|\s]+/g, "_");
+        return `${safe || "image"}_${job.id.slice(0, 8)}_${index + 1}.${ext}`;
+      }
+
+      function findJob(id) {
+        if (state.currentJob?.id === id) return state.currentJob;
+        return state.history.find((job) => job.id === id);
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "").replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+      }
+
+      function escapeAttr(value) {
+        return escapeHtml(value).replace(/'/g, "&#39;");
+      }
+
+      function setupEvents() {
+        els.form.addEventListener("submit", submitGenerate);
+        els.uploadBtn.addEventListener("click", () => els.fileInput.click());
+        els.fileInput.addEventListener("change", (event) => handleFiles(event.target.files));
+        renderUploads();
+        els.showNegative.addEventListener("change", () => els.negativeRow.classList.toggle("show", els.showNegative.checked));
+        els.showAdvanced.addEventListener("change", () => els.advancedRow.classList.toggle("show", els.showAdvanced.checked));
+        [els.apiBase, els.upstreamBaseUrl, els.upstreamApiKey, els.provider, els.model, els.responseModel, els.retryCount, els.filePrefix, els.newPassword].forEach((input) => {
+          input.addEventListener("change", persistSettingsFromForm);
+        });
+        els.apiBase.addEventListener("change", detectApi);
+        els.clearHistoryBtn.addEventListener("click", async () => {
+          if (!confirm("确认清空浏览器里的图片历史？")) return;
+          await clearJobs();
+          state.currentJob = null;
+          await loadHistory();
+          renderCurrentJob();
+        });
+        els.loadLatestBtn.addEventListener("click", () => {
+          state.currentJob = state.history[0] || null;
+          renderCurrentJob();
+        });
+        els.reuseBtn.addEventListener("click", () => fillFormFromJob(state.currentJob || state.history[0]));
+        els.downloadAllBtn.addEventListener("click", () => {
+          const job = state.currentJob;
+          if (!job) return;
+          (job.images || []).forEach((image, index) => setTimeout(() => downloadImage(image, imageFileName(job, index, image)), index * 250));
+        });
+        els.settingsBtn.addEventListener("click", showSettingsModal);
+        els.settingsCancelBtn.addEventListener("click", () => els.settingsModal.classList.remove("show"));
+        els.settingsForm.addEventListener("submit", (event) => {
+          event.preventDefault();
+          applySettingsValues({
+            upstreamBaseUrl: els.settingsBaseUrl.value,
+            upstreamApiKey: els.settingsApiKey.value,
+            model: els.settingsModel.value,
+            provider: els.settingsProvider.value,
+          });
+          const newPassword = els.settingsNewPassword.value.trim();
+          if (newPassword) {
+            localStorage.setItem(PASSWORD_STORAGE_KEY, hashPassword(newPassword));
+          }
+          persistSettingsFromForm();
+          els.settingsNewPassword.value = "";
+          els.settingsModal.classList.remove("show");
+          toast("设置已保存。", "good");
+          detectApi();
+        });
+        els.history.addEventListener("click", (event) => {
+          const button = event.target.closest("[data-job]");
+          if (!button) return;
+          state.currentJob = findJob(button.dataset.job);
+          renderCurrentJob();
+        });
+        els.results.addEventListener("click", async (event) => {
+          const button = event.target.closest("[data-action]");
+          if (!button) return;
+          const job = findJob(button.dataset.job);
+          const index = Number(button.dataset.index || 0);
+          const image = job?.images?.[index];
+          if (!job || !image) return;
+          const href = image.displayUrl || image.url || image.downloadUrl || image.assetUrl;
+          if (button.dataset.action === "download") downloadImage(image, imageFileName(job, index, image));
+          if (button.dataset.action === "open") window.open(href, "_blank", "noopener");
+          if (button.dataset.action === "copy") {
+            await navigator.clipboard.writeText(href || "");
+            toast("图片地址已复制。", "good");
+          }
+          if (button.dataset.action === "reuse-image") {
+            const compressed = await compressResultImageForReference(image, imageFileName(job, index, image));
+            state.uploads = [compressed];
+            els.mode.value = "image_to_image";
+            els.endpoint.value = "auto";
+            renderUploads();
+            toast(`已压缩并放入参考图：${formatBytes(compressed.bytes)}`, "good");
+          }
+        });
+        els.uploadList.addEventListener("click", (event) => {
+          const button = event.target.closest("[data-remove-upload]");
+          if (!button) return;
+          state.uploads.splice(Number(button.dataset.removeUpload), 1);
+          renderUploads();
+        });
+        ["dragenter", "dragover"].forEach((name) => document.addEventListener(name, (event) => {
+          event.preventDefault();
+          els.dropzone.classList.add("dragover");
+        }));
+        ["dragleave", "drop"].forEach((name) => document.addEventListener(name, (event) => {
+          event.preventDefault();
+          els.dropzone.classList.remove("dragover");
+        }));
+        document.addEventListener("drop", (event) => handleFiles(event.dataTransfer.files));
+        els.loginForm.addEventListener("submit", (event) => {
+          event.preventDefault();
+          unlock();
+        });
+      }
+
+      function unlock() {
+        const entered = els.loginPassword.value;
+        const storedHash = localStorage.getItem(PASSWORD_STORAGE_KEY);
+        if (!storedHash && entered.trim()) {
+          const setupBaseUrl = normalizeBaseUrl(els.setupBaseUrl.value);
+          const setupApiKey = els.setupApiKey.value.trim();
+          const setupModel = els.setupModel.value.trim() || "gpt-image-2";
+          if (!setupBaseUrl || !setupApiKey) {
+            toast("第一次进入需要填写出图 URL 和 Key。", "bad");
+            return;
+          }
+          applySettingsValues({
+            upstreamBaseUrl: setupBaseUrl,
+            upstreamApiKey: setupApiKey,
+            model: setupModel,
+            provider: "jucode",
+          });
+          persistSettingsFromForm();
+          localStorage.setItem(PASSWORD_STORAGE_KEY, hashPassword(entered));
+          sessionStorage.setItem("imageLabUnlocked", "1");
+          els.login.classList.remove("show");
+          toast("已完成首次设置。", "good");
+          detectApi();
+        } else if (storedHash && hashPassword(entered) === storedHash) {
+          sessionStorage.setItem("imageLabUnlocked", "1");
+          els.login.classList.remove("show");
+          if (!hasUpstreamSettings()) {
+            toast("请先补全出图 URL 和 Key。", "bad");
+            showSettingsModal();
+          }
+        } else {
+          toast("密码不对。", "bad");
+        }
+      }
+
+      async function init() {
+        applyStoredSettings();
+        setupEvents();
+        if (!hasPassword()) {
+          sessionStorage.removeItem("imageLabUnlocked");
+        }
+        if (sessionStorage.getItem("imageLabUnlocked") !== "1") {
+          if (!hasPassword()) {
+            els.login.querySelector("p").textContent = "第一次进入请同时设置访问密码、出图 URL、Key 和模型；这些信息会保存到本浏览器。";
+            els.loginBtn.textContent = "保存并进入";
+            els.firstSetupFields.classList.add("show");
+            els.setupBaseUrl.value = els.upstreamBaseUrl.value || "https://api.jucode.cn/v1";
+            els.setupApiKey.value = els.upstreamApiKey.value || "";
+            els.setupModel.value = els.model.value || "gpt-image-2";
+          } else {
+            els.login.querySelector("p").textContent = "请输入访问密码。URL、Key 和模型可在进入后的设置里修改。";
+            els.loginBtn.textContent = "进入";
+            els.firstSetupFields.classList.remove("show");
+          }
+          els.login.classList.add("show");
+          setTimeout(() => els.loginPassword.focus(), 50);
+        } else if (!hasUpstreamSettings()) {
+          setTimeout(() => {
+            toast("请先补全出图 URL 和 Key。", "bad");
+            showSettingsModal();
+          }, 100);
+        }
+        try {
+          state.db = await openDb();
+          await loadHistory();
+          state.currentJob = state.history[0] || null;
+          renderCurrentJob();
+        } catch (error) {
+          toast(`IndexedDB 不可用：${error.message || error}`, "bad");
+        }
+        await detectApi();
+      }
+
+      init();
+    </script>
+  </body>
+</html>
