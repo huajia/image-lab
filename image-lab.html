@@ -260,6 +260,15 @@
         transition: transform 0.25s linear;
       }
 
+      .progress-bar.waiting {
+        animation: progressWaiting 1.25s ease-in-out infinite alternate;
+      }
+
+      @keyframes progressWaiting {
+        from { opacity: 0.58; }
+        to { opacity: 1; }
+      }
+
       .toolbar-left,
       .toolbar-right {
         display: flex;
@@ -1150,21 +1159,26 @@
         clearInterval(state.progressTimer);
         state.progressStartedAt = performance.now();
         state.progressDurationMs = Math.max(1, seconds) * 1000;
+        els.progressBar.classList.remove("waiting");
         els.progressBar.style.transform = "scaleX(1)";
         els.progressRail.classList.add("show");
         state.progressTimer = setInterval(() => {
           const elapsed = performance.now() - state.progressStartedAt;
-          const remaining = Math.max(0, 1 - elapsed / state.progressDurationMs);
-          els.progressBar.style.transform = `scaleX(${remaining})`;
+          const rawRemaining = Math.max(0, 1 - elapsed / state.progressDurationMs);
+          const visibleRemaining = state.busy ? Math.max(0.08, rawRemaining) : rawRemaining;
+          els.progressBar.style.transform = `scaleX(${visibleRemaining})`;
           const secondsLeft = Math.max(0, Math.ceil((state.progressDurationMs - elapsed) / 1000));
-          if (state.busy) els.jobStatus.textContent = `生成中，约 ${secondsLeft}s`;
-          if (remaining <= 0) clearInterval(state.progressTimer);
+          if (state.busy) {
+            els.jobStatus.textContent = secondsLeft > 0 ? `生成中，约 ${secondsLeft}s` : "生成中，收尾中";
+            els.progressBar.classList.toggle("waiting", secondsLeft <= 0);
+          }
         }, 250);
       }
 
       function stopFakeProgress() {
         clearInterval(state.progressTimer);
         state.progressTimer = null;
+        els.progressBar.classList.remove("waiting");
         els.progressBar.style.transform = "scaleX(0)";
         setTimeout(() => {
           if (!state.busy) els.progressRail.classList.remove("show");
